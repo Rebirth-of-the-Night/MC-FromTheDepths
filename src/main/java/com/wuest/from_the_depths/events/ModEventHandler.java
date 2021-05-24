@@ -18,6 +18,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -106,6 +107,19 @@ public class ModEventHandler {
           }
         }
       }
+    }
+  }
+
+  @SubscribeEvent
+  public static void bossLivingUpdate(LivingEvent.LivingUpdateEvent event) {
+    NBTTagCompound data = event.getEntityLiving().getEntityData();
+    if (!data.hasKey("from_the_depths") || !data.getCompoundTag("from_the_depths").hasKey("timeUntilDespawn"))
+      return;
+
+    //Should work correctly with time in seconds since we start checking this as soon as the entity is spawned in the world
+    if (event.getEntityLiving().ticksExisted % 20 == 0) {
+      int idleTimeUntilDespawn = data.getCompoundTag("from_the_depths").getInteger("timeUntilDespawn");
+
     }
   }
 

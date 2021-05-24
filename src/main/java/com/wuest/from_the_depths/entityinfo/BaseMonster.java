@@ -4,7 +4,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.wuest.from_the_depths.FromTheDepths;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.*;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityList;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.entity.effect.EntityLightningBolt;
 import net.minecraft.nbt.JsonToNBT;
@@ -30,6 +33,7 @@ public abstract class BaseMonster {
 	public JsonObject nbt;
 	public SpawnEffectEnum spawnEffect;
 	public boolean shouldSpawnInAir;
+	public int idleTimeBeforeDespawning;
 
 	public BaseMonster() {
 		this.maxHealth = -1;
@@ -41,6 +45,7 @@ public abstract class BaseMonster {
 		this.nbt = null;
 		this.spawnEffect = SpawnEffectEnum.NONE;
 		this.shouldSpawnInAir = false;
+		this.idleTimeBeforeDespawning = -1;
 	}
 
 	public ResourceLocation createResourceLocation() {
@@ -104,7 +109,7 @@ public abstract class BaseMonster {
 				entityLiving.renderYawOffset = entityLiving.rotationYaw;
 				entityLiving.setPositionAndUpdate(spawnPos.getX(), spawnPos.getY(), spawnPos.getZ());
 				entityLiving.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(spawnPos)),
-						(IEntityLivingData) null);
+						null);
 
 				// Serialize the entity NBT data so it can be updated.
 				NBTTagCompound serializedEntity = entityLiving.serializeNBT();
@@ -130,8 +135,7 @@ public abstract class BaseMonster {
 				world.spawnEntity(entityLiving);
 
 				if (this.spawnEffect == SpawnEffectEnum.LIGHTNING) {
-					world.addWeatherEffect(new EntityLightningBolt(world, (double) spawnPos.getX(), (double) spawnPos.getY(),
-							(double) spawnPos.getZ(), true));
+					world.addWeatherEffect(new EntityLightningBolt(world, spawnPos.getX(), spawnPos.getY(), spawnPos.getZ(), true));
 				}
 
 				entityLiving.playLivingSound();
@@ -265,6 +269,7 @@ public abstract class BaseMonster {
 		tag.setString("commandToRunAtSpawn", this.commandToRunAtSpawn);
 		tag.setString("spawnEffect", this.spawnEffect.getName());
 		tag.setBoolean("shouldSpawnInAir", this.shouldSpawnInAir);
+		tag.setInteger("idlingSecondsBeforeDespawn", this.idleTimeBeforeDespawning);
 
 		if (this.nbt != null) {
 			tag.setString("nbt", this.nbt.toString());
@@ -295,6 +300,7 @@ public abstract class BaseMonster {
 		this.commandToRunAtSpawn = tag.getString("commandToRunAtSpawn");
 		this.spawnEffect = SpawnEffectEnum.getFromName(tag.getString("spawnEffect"));
 		this.shouldSpawnInAir = tag.getBoolean("shouldSpawnInAir");
+		this.idleTimeBeforeDespawning = tag.getInteger("idlingSecondsBeforeDespawn");
 
 		if (tag.hasKey("nbt")) {
 			JsonParser parser = new JsonParser();
