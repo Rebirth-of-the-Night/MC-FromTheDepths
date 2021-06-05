@@ -12,7 +12,6 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.EntityLightningBolt;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.EnumFacing;
@@ -123,15 +122,10 @@ public class TileEntityAltarOfSpawning extends TileEntityBase<ConfigTileEntityAl
       if (!this.config.bossSpawned && this.config.preBossMinions.size() == 0) {
 
         if (this.config.totalLightningBolts >= 4) {
+          //Spawn the actual boss
           Entity entity = this.config.currentSpawnInfo.bossInfo.createEntityForWorld(this.world, this.pos, validPlayer, this.commandSender);
           entities.add(entity.getEntityId());
           //System.out.println("added " + entity.getDisplayName().getFormattedText() + " to the list");
-
-          NBTTagCompound fromTheDepthsTag = entity.getEntityData().getCompoundTag("from_the_depths");
-          if (!fromTheDepthsTag.hasKey("timeUntilDespawn") && config.currentSpawnInfo.bossInfo.idleTimeBeforeDespawning > 0) {
-            fromTheDepthsTag.setInteger("timeUntilDespawn", config.currentSpawnInfo.bossInfo.idleTimeBeforeDespawning);
-            fromTheDepthsTag.setLong("tilePos", this.pos.toLong());
-          }
 
           if (entity == null) {
             TextComponentTranslation component = new TextComponentTranslation(

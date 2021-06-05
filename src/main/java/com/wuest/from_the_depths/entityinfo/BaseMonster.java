@@ -93,7 +93,7 @@ public abstract class BaseMonster {
 				}
 
 				// Add a tracking tag to the entity's saved NBT data.
-				NBTTagCompound trackingTag = new NBTTagCompound();
+				NBTTagCompound fromTheDepthsTag = new NBTTagCompound();
 
 				NBTTagList additionalDropList = new NBTTagList();
 
@@ -106,11 +106,16 @@ public abstract class BaseMonster {
 					}
 				}
 
-				trackingTag.setTag("additionalDrops", additionalDropList);
+				fromTheDepthsTag.setTag("additionalDrops", additionalDropList);
+
+				if (!fromTheDepthsTag.hasKey("timeUntilDespawn") && this.idleTimeBeforeDespawning > 0) {
+					fromTheDepthsTag.setInteger("timeUntilDespawn", this.idleTimeBeforeDespawning);
+					fromTheDepthsTag.setLong("tilePos", pos.toLong());
+				}
 
 				// Write the custom tag to this entity.
 				NBTTagCompound entityCompoundTag = entityLiving.getEntityData();
-				entityCompoundTag.setTag("from_the_depths", trackingTag);
+				entityCompoundTag.setTag("from_the_depths", fromTheDepthsTag);
 
 				entityLiving.forceSpawn = true;
 				entityLiving.rotationYawHead = entityLiving.rotationYaw;
