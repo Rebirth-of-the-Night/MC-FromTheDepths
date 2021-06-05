@@ -125,7 +125,7 @@ public class TileEntityAltarOfSpawning extends TileEntityBase<ConfigTileEntityAl
           NBTTagCompound fromTheDepthsTag = entity.getEntityData().getCompoundTag("from_the_depths");
           if (!fromTheDepthsTag.hasKey("timeUntilDespawn") && config.currentSpawnInfo.bossInfo.idleTimeBeforeDespawning > 0) {
             fromTheDepthsTag.setInteger("timeUntilDespawn", config.currentSpawnInfo.bossInfo.idleTimeBeforeDespawning);
-            fromTheDepthsTag.setLong("Has", world.getTotalWorldTime());
+            fromTheDepthsTag.setLong("tilePos", this.pos.toLong());
           }
 
           if (entity == null) {
