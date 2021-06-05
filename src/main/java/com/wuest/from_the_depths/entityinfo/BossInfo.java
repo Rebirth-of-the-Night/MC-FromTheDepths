@@ -33,6 +33,8 @@ public class BossInfo extends BaseMonster implements INBTSerializable<BossInfo> 
     newInstance.nbt = this.nbt;
     newInstance.spawnEffect = this.spawnEffect;
     newInstance.shouldSpawnInAir = this.shouldSpawnInAir;
+    newInstance.warningMessage = this.warningMessage;
+    newInstance.spawnedMessage = this.spawnedMessage;
     newInstance.idleTimeBeforeDespawning = this.idleTimeBeforeDespawning;
 
     for (DropInfo info : this.additionalDrops) {

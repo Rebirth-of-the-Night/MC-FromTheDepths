@@ -1,5 +1,6 @@
 package com.wuest.from_the_depths.entityinfo;
 
+import com.google.common.base.Predicate;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.wuest.from_the_depths.FromTheDepths;
@@ -10,14 +11,17 @@ import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.entity.effect.EntityLightningBolt;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 
 public abstract class BaseMonster {
@@ -33,6 +37,8 @@ public abstract class BaseMonster {
 	public JsonObject nbt;
 	public SpawnEffectEnum spawnEffect;
 	public boolean shouldSpawnInAir;
+	public String warningMessage;
+	public String spawnedMessage;
 	public int idleTimeBeforeDespawning;
 
 	public BaseMonster() {
@@ -45,6 +51,8 @@ public abstract class BaseMonster {
 		this.nbt = null;
 		this.spawnEffect = SpawnEffectEnum.NONE;
 		this.shouldSpawnInAir = false;
+		this.warningMessage = "";
+		this.spawnedMessage = "";
 		this.idleTimeBeforeDespawning = -1;
 	}
 
@@ -52,7 +60,7 @@ public abstract class BaseMonster {
 		return new ResourceLocation(this.domain, this.name);
 	}
 
-	public Entity createEntityForWorld(World world, BlockPos pos, ICommandSender commandSender) {
+	public Entity createEntityForWorld(World world, BlockPos pos, @Nullable Predicate<EntityPlayerMP> playerValid, ICommandSender commandSender) {
 		ResourceLocation resourceLocation = this.createResourceLocation();
 		Entity entity = EntityList.createEntityByIDFromName(resourceLocation, world);
 
@@ -136,6 +144,13 @@ public abstract class BaseMonster {
 
 				if (this.spawnEffect == SpawnEffectEnum.LIGHTNING) {
 					world.addWeatherEffect(new EntityLightningBolt(world, spawnPos.getX(), spawnPos.getY(), spawnPos.getZ(), true));
+				}
+
+				//Boss Spawned Message | if the predicate is not null it means we're spawning the actual boss and not minions
+				if (playerValid != null) {
+					world.getPlayers(EntityPlayerMP.class, playerValid).forEach(player ->
+							player.sendMessage(new TextComponentString(this.spawnedMessage))
+					);
 				}
 
 				entityLiving.playLivingSound();
@@ -269,6 +284,8 @@ public abstract class BaseMonster {
 		tag.setString("commandToRunAtSpawn", this.commandToRunAtSpawn);
 		tag.setString("spawnEffect", this.spawnEffect.getName());
 		tag.setBoolean("shouldSpawnInAir", this.shouldSpawnInAir);
+		tag.setString("warningMessage", this.warningMessage);
+		tag.setString("spawnedMessage", this.spawnedMessage);
 		tag.setInteger("idlingSecondsBeforeDespawn", this.idleTimeBeforeDespawning);
 
 		if (this.nbt != null) {
@@ -300,6 +317,8 @@ public abstract class BaseMonster {
 		this.commandToRunAtSpawn = tag.getString("commandToRunAtSpawn");
 		this.spawnEffect = SpawnEffectEnum.getFromName(tag.getString("spawnEffect"));
 		this.shouldSpawnInAir = tag.getBoolean("shouldSpawnInAir");
+		this.warningMessage = tag.getString("warningMessage");
+		this.spawnedMessage = tag.getString("spawnedMessage");
 		this.idleTimeBeforeDespawning = tag.getInteger("idlingSecondsBeforeDespawn");
 
 		if (tag.hasKey("nbt")) {
@@ -337,11 +356,6 @@ public abstract class BaseMonster {
 				", attackDamage=" + attackDamage +
 				", alwaysShowDisplayName=" + alwaysShowDisplayName +
 				", timeToWaitBeforeSpawn=" + timeToWaitBeforeSpawn +
-				", additionalDrops=" + additionalDrops +
-				", commandToRunAtSpawn='" + commandToRunAtSpawn + '\'' +
-				", nbt=" + nbt +
-				", spawnEffect=" + spawnEffect +
-				", shouldSpawnInAir=" + shouldSpawnInAir +
 				'}';
 	}
 }
