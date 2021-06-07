@@ -10,6 +10,7 @@ import com.wuest.from_the_depths.proxy.CommonProxy;
 import com.wuest.from_the_depths.proxy.messages.ConfigSyncMessage;
 import com.wuest.from_the_depths.tileentity.TileEntityAltarOfSpawning;
 import net.minecraft.block.Block;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -129,13 +130,13 @@ public class ModEventHandler {
     NBTTagCompound fromTheCompound = data.getCompoundTag("from_the_depths");
 
     //Should work correctly with time in seconds since we start checking this as soon as the bossEntity is spawned in the world
-    if (bossEntity.ticksExisted % 20 == 0) {
+    if (bossEntity.ticksExisted % 20 == 0 && bossEntity instanceof EntityLiving) {
 
-      EntityLivingBase targetEnt = bossEntity.getAttackingEntity();
+      EntityLivingBase targetEnt = ((EntityLiving) bossEntity).getAttackTarget();
 
-      FromTheDepths.logger.info("Target: {}", targetEnt == null ? "null" : targetEnt.getDisplayName());
+      FromTheDepths.logger.info("Target: {}", targetEnt == null ? "null" : targetEnt.getDisplayName().getFormattedText());
 
-      if (bossEntity.getAttackingEntity() == null) {
+      if (targetEnt == null) {
         if (!fromTheCompound.hasKey("idleTimeStart"))
           fromTheCompound.setLong("idleTimeStart", event.getEntity().world.getTotalWorldTime());
       }
@@ -150,11 +151,11 @@ public class ModEventHandler {
       TileEntityAltarOfSpawning altar = (TileEntityAltarOfSpawning) world.getTileEntity(pos);
 
       //System.out.println(idleTimeStart + (idleTimeUntilDespawn * 20L) + "  -  " + world.getTotalWorldTime());
-      if (idleTimeStart + (idleTimeUntilDespawn * 20L) <= world.getTotalWorldTime()) {
+      if (idleTimeStart != 0 && idleTimeStart + (idleTimeUntilDespawn * 20L) <= world.getTotalWorldTime()) {
         if (altar != null)
           altar.resetSpawner();
 
-        world.getPlayers(EntityPlayerMP.class, EntitySelectors.withinRange(bossEntity.posX, bossEntity.posY, bossEntity.posZ, 15)).forEach(player ->
+        world.getPlayers(EntityPlayerMP.class, EntitySelectors.withinRange(bossEntity.posX, bossEntity.posY, bossEntity.posZ, 25)).forEach(player ->
           player.sendMessage(new TextComponentString("The boss has despawned after being idle for " + idleTimeUntilDespawn + " seconds."))
         );
         //world.getPlayers(EntityPlayerMP.class, );
