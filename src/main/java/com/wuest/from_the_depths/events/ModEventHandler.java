@@ -18,9 +18,13 @@ import net.minecraft.item.Item;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.EntitySelectors;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -117,33 +121,52 @@ public class ModEventHandler {
 
   @SubscribeEvent
   public static void bossLivingUpdate(LivingEvent.LivingUpdateEvent event) {
-    NBTTagCompound data = event.getEntityLiving().getEntityData();
+    final EntityLivingBase bossEntity = event.getEntityLiving();
+    NBTTagCompound data = bossEntity.getEntityData();
     if (!data.hasKey("from_the_depths") || !data.getCompoundTag("from_the_depths").hasKey("timeUntilDespawn"))
       return;
 
     NBTTagCompound fromTheCompound = data.getCompoundTag("from_the_depths");
 
-    //Should work correctly with time in seconds since we start checking this as soon as the entity is spawned in the world
-    if (event.getEntityLiving().ticksExisted % 20 == 0) {
+    //Should work correctly with time in seconds since we start checking this as soon as the bossEntity is spawned in the world
+    if (bossEntity.ticksExisted % 20 == 0) {
 
-      if (event.getEntityLiving().getAttackingEntity() == null)
-        fromTheCompound.setLong("idleTimeStart", event.getEntity().world.getTotalWorldTime());
+      EntityLivingBase targetEnt = bossEntity.getAttackingEntity();
 
-      World world = event.getEntityLiving().world;
+      FromTheDepths.logger.info("Target: {}", targetEnt == null ? "null" : targetEnt.getDisplayName());
+
+      if (bossEntity.getAttackingEntity() == null) {
+        if (!fromTheCompound.hasKey("idleTimeStart"))
+          fromTheCompound.setLong("idleTimeStart", event.getEntity().world.getTotalWorldTime());
+      }
+      else {
+        fromTheCompound.removeTag("idleTimeStart");
+      }
+
+      World world = bossEntity.world;
       int idleTimeUntilDespawn = fromTheCompound.getInteger("timeUntilDespawn");
       long idleTimeStart = fromTheCompound.getLong("idleTimeStart");
       BlockPos pos = BlockPos.fromLong(fromTheCompound.getLong("tilePos"));
       TileEntityAltarOfSpawning altar = (TileEntityAltarOfSpawning) world.getTileEntity(pos);
 
-      if (idleTimeStart + (idleTimeUntilDespawn * 20L) > world.getTotalWorldTime()) {
+      //System.out.println(idleTimeStart + (idleTimeUntilDespawn * 20L) + "  -  " + world.getTotalWorldTime());
+      if (idleTimeStart + (idleTimeUntilDespawn * 20L) <= world.getTotalWorldTime()) {
         if (altar != null)
           altar.resetSpawner();
 
-        // TODO: 05/06/2021 Player Notice Message
+        world.getPlayers(EntityPlayerMP.class, EntitySelectors.withinRange(bossEntity.posX, bossEntity.posY, bossEntity.posZ, 15)).forEach(player ->
+          player.sendMessage(new TextComponentString("The boss has despawned after being idle for " + idleTimeUntilDespawn + " seconds."))
+        );
         //world.getPlayers(EntityPlayerMP.class, );
-        world.playSound(null, event.getEntity().getPosition(), SoundEvents.ENTITY_FIREWORK_BLAST, SoundCategory.HOSTILE, 1F, 1F);
-        world.removeEntity(event.getEntity());
-        // TODO: 05/06/2021 Maybe particles
+        world.playSound(null, bossEntity.getPosition(), SoundEvents.ENTITY_FIREWORK_BLAST, SoundCategory.HOSTILE, 1F, 1F);
+        bossEntity.setDead();
+
+        if (!world.isRemote) {
+          WorldServer sWorld = (WorldServer) world;
+          sWorld.spawnParticle(EnumParticleTypes.CRIT_MAGIC,
+                  bossEntity.posX, bossEntity.posY + 0.5, bossEntity.posZ, 20,
+                  Math.random(), Math.random(), Math.random(), Math.random() * 0.1 - 0.05);
+        }
       }
     }
   }
